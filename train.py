@@ -1,5 +1,4 @@
 import pandas as pd
-import pickle
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.externals import joblib
@@ -38,7 +37,7 @@ class ModelTrainer:
 
     def ExportMappingData(self, path):
         with open(path, 'wb') as file:
-            pickle.dump(self.encoders, file)
+            joblib.dump(self.encoders, file)
 
     def LoadTrainingData(self, path):
         self.train_df = pd.read_csv(path)
@@ -46,7 +45,7 @@ class ModelTrainer:
 
     def TrainModel(self):
         x_values = self.train_df[list(self.features)].values
-        y_values = self.train_df["rating"].values
+        y_values = self.train_df['rating'].values
         rf = RandomForestClassifier()
         self.model = rf.fit(x_values, y_values)
         #print(rf.score(x_values, y_values))
@@ -67,7 +66,7 @@ if __name__ == "__main__":
     mt.ExportTrainingData('training.csv')
     mt.ExportMappingData('mapping.dat')
     with open('mapping.dat', 'rb') as mapping_file:
-        print(pickle.load(mapping_file)['price'].classes_)
+        print(joblib.load(mapping_file)['price'].classes_)
     mt.TrainModel()
     mt.ExportModel('model.dat')
     mt.LoadModel('model.dat')
