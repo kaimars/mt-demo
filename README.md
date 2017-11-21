@@ -1,11 +1,12 @@
 This document describes the solution made to solve task described in "Task description.docx".
 
-H2 Solution overview
+##H2 Solution overview
 The solution has 3 parts: 
-* prediction model trainer (train.py)
 * data pipeline for rebuilding the prediction model (pipeline.py)
+* prediction model trainer (train.py)
 * web service to execute the prediction model (api/webapi.py)
 
+###H3 pipeline.py
 
 It is assumed that training the model and using the model can be done independently thus the training results are saved to file and can then be deployed to target environment.
 
