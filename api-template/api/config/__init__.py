@@ -10,6 +10,8 @@ except ImportError as e:
 class BaseConfig(BasePrivate):
     HOST = '0.0.0.0'
     PORT = 5000
+    ENCODERS_PATH = 'config/encoders.pkl'
+    MODEL_PATH = 'config/model.pkl'
 
 
 class DevelopmentConfig(BaseConfig):
