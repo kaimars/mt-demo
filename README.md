@@ -7,9 +7,15 @@ The solution has 3 parts:
 * web service to execute the prediction model (api/webapi.py)
 
 ### pipeline.py
-
-It is assumed that training the model and using the model can be done independently thus the training results are saved to file and can then be deployed to target environment.
-
+This is set of Luigi framework tasks: DeployModel, TrainModel, PrepareData, CollectData.
+TrainModel and DeployModel are meant to be used by end user, other are subtasks and not so useful standalone.
+It is assumed that training the model and using the model can be done independently thus the training results are saved to file and can then be deployed to target environment. DeployModel is used to deploy the new version of prediction model over to web service.
+#### Usage
+```
+$ luigi --module pipeline DeployModel --local-scheduler
+$ luigi --module pipeline TrainModel --local-scheduler
+```
+Note that if the web service is running it has to be restarted to bring new prediction model into effect.
 
 
 Log
