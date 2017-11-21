@@ -1,3 +1,4 @@
+import logging
 from flask import Flask
 from flask_restplus import Api
 from flask_restplus import fields
@@ -27,28 +28,26 @@ for key, mapper in mappers.items():
                        choices=list(mapper.classes_),
                        location='form')
 
-response_model = api.model('Response', { 'result': fields.String})
-
-
 @ns.route('/')
 class RestaurantApi(Resource):
 
     @api.doc(parser=parser)
-    @api.marshal_with(api.model('Response', { 'result': fields.String}))
+    @api.marshal_with(api.model('Response', { 'rating': fields.String}))
     def post(self):
        args = parser.parse_args()
        values = {}
        for key, mapper in mappers.items():
           values[key] = mapper.transform([args[key]])[0]
-       df = DataFrame([values]);
-       result = model.predict(df)[0]
-       return { 'result': result }
+       result = model.predict(DataFrame([values]))[0]
+       app.logger.warn('%s predicted rating %d', str(values), result)
+       return { 'rating': result }
 
 @api.errorhandler(Exception)
 def handle_exception(error):
     app.logger.error('Server Error: %s', (error))
     '''Return a custom message and 500 status code'''
-    return {'message': 'Unspecified error occured. See log for details.'}
+    return {'message': 'Unspecified error occurred. See log for details.'}
 
 if __name__ == '__main__':
+    app.logger.setLevel(logging.DEBUG)
     app.run(debug=True)

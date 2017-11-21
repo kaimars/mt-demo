@@ -1,22 +1,9 @@
 import luigi
 import os
-import pandas as pd
 import train
+import shutil
 
 # How to deal with multiple input/outputs: https://groups.google.com/forum/#!topic/luigi-user/ybWN_lEcPrU
-
-class Cleanup(luigi.Task):
-    """
-    This task removes all output files for all tasks effectively marking these as incomplete.
-    """
-    priority = 100
-
-    def run(self):
-        if(os._exists('train.csv')):
-            os.remove('train.csv')
-
-    def complete(self):
-        return True
 
 class CollectData(luigi.Task):
     """
@@ -39,7 +26,8 @@ class CollectData(luigi.Task):
 
 class PrepareData(luigi.Task):
     """
-    This task ...
+    This task prepares training data. Encoded trainig data is written to train.csv and used mappings
+    are dumped to mapping.dat file.
     """
 
     def requires(self):
@@ -52,14 +40,16 @@ class PrepareData(luigi.Task):
     def run(self):
         print('Starting to prepare data')
         mt = train.ModelTrainer()
-        df = mt.LoadRawData(self.input()['places'].path, self.input()['parking'].path, self.input()['rating'].path)
+        mt.LoadRawData(self.input()['places'].path, self.input()['parking'].path, self.input()['rating'].path)
         mt.TransformData()
         mt.ExportTrainingData(self.output()['data'].path)
         mt.ExportMappingData(self.output()['mapping'].path)
 
 
-
 class TrainModel(luigi.Task):
+    """
+    This task trains model and writes trained model to file model.dat
+    """
 
     def requires(self):
         return PrepareData()
@@ -75,14 +65,24 @@ class TrainModel(luigi.Task):
         mt.TrainModel()
         mt.ExportModel(self.output()['model'].path)
 
+
 class DeployModel(luigi.Task):
+    """
+    This task sends new prediction model and mapping files to web service for consumption.
+    """
+    #TODO: send also 'reload model' command to web service, currently must restart web server for that
 
     def requires(self):
         return TrainModel()
 
+    def complete(self):
+        return False
+
     def run(self):
-        print('Starting to deploy prediction model')
+        print('Starting to deploy new prediction model')
+        shutil.copyfile(self.input()['model'].path, 'api/model.dat')
+        shutil.copyfile(self.input()['mapping'].path, 'api/mapping.dat')
 
 
 if __name__ == "__main__":
-    luigi.run(["--local-scheduler"], main_task_cls = TrainModel)
+    luigi.run(["--local-scheduler"], main_task_cls = DeployModel)

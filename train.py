@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn import tree
 from sklearn.preprocessing import LabelEncoder
 from sklearn.externals import joblib
 
@@ -11,18 +11,12 @@ class ModelTrainer:
 
     def LoadRawData(self, places_file, parking_file, rating_file):
         df1 = pd.read_csv(places_file,
-                          usecols=['placeID', 'price', 'smoking_area', 'other_services', 'dress_code', 'accessibility'],
-                          dtype={'placeID': 'int64',
-                                 'price': 'category',
-                                 'smoking_area': 'category',
-                                 'other_services': 'category',
-                                 'dress_code': 'category',
-                                 'accessibility': 'category'})
-        df2 = pd.read_csv(parking_file,
-                          dtype={'parking_lot': 'category'})
-        ratings_raw = pd.read_csv(rating_file, usecols=["placeID", "rating"])
-        place_rating_means = ratings_raw.groupby("placeID", as_index=False).median().astype('int')
-        self.train_df = df1.merge(df2, on="placeID").merge(place_rating_means, on="placeID")
+                          usecols=['placeID', 'price', 'smoking_area', 'other_services', 'dress_code', 'accessibility'])
+        df2 = pd.read_csv(parking_file)
+        ratings_raw = pd.read_csv(rating_file, usecols=['placeID', 'rating'])
+        # we use most common rating (mode) to train the prediction model
+        aggregated_ratings = ratings_raw.groupby(['placeID'], as_index=False).agg(lambda x: x.value_counts().index[0])
+        self.train_df = df1.merge(df2, on='placeID').merge(aggregated_ratings, on='placeID')
         return self.train_df
 
     def TransformData(self):
@@ -46,22 +40,19 @@ class ModelTrainer:
     def TrainModel(self):
         x_values = self.train_df[list(self.features)].values
         y_values = self.train_df['rating'].values
-        rf = RandomForestClassifier()
-        self.model = rf.fit(x_values, y_values)
-        #print(rf.score(x_values, y_values))
+        classifier = tree.DecisionTreeClassifier(min_samples_leaf=10)
+        self.model = classifier.fit(x_values, y_values)
         return self.model
 
     def ExportModel(self, path):
         joblib.dump(self.model, path)
 
-    def LoadModel(self, path):
-        self.model = joblib.load(path)
 
-if __name__ == "__main__":
-    # smoke test scenario
+if __name__ == '__main__':
+    # basic smoke test scenario
     mt = ModelTrainer()
     df = mt.LoadRawData('data/geoplaces2.csv', 'data/chefmozparking.csv', 'data/rating_final.csv')
-    print(df.head())
+    print(df.head(10))
     mt.TransformData()
     mt.ExportTrainingData('training.csv')
     mt.ExportMappingData('mapping.dat')
